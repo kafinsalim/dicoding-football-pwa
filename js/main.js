@@ -245,7 +245,7 @@ function showTeams(data) {
             <div class="card">
                 <div class="card-image">
                     <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
-                    <a class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
+                    <a onclick="addToFavorite(${team.id},'${team.name}')" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
                 </div>
                 <div class="card-content">
                     <h6>${team.name}</h6>
@@ -261,4 +261,8 @@ function showTeams(data) {
   renderTarget.innerHTML = content;
   document.getElementById("header-title").innerHTML = "English Premier Teams";
   hideLoader();
+}
+
+function addToFavorite(id, name) {
+  M.toast({ html: `${name} added to your favorites !` });
 }
