@@ -6,10 +6,16 @@ body {
   -webkit-font-smoothing: antialiased;
   color: #121314;
 }
+
 #body-content {
   padding: 16px;
   text-align: center;
 }
+
+#header-title {
+  margin-top: 16px;
+}
+
 .footer-copyright {
   width: 100%;
   text-align: center;
@@ -17,55 +23,9 @@ body {
   bottom: 0;
   padding: 12px;
 }
+
 .footer-text {
   border-radius: 4px;
   padding: 5px;
   background-color: #29b6f6;
-}
-
-/* Home */
-.photo {
-  background-size: 150px;
-  background-position: center;
-  border-radius: 50%;
-  width: 75px;
-  height: 75px;
-  margin: auto;
-}
-.p-medium {
-  background-size: 150px;
-  width: 135px;
-  height: 135px;
-  margin: 32px auto;
-}
-.p-large {
-  background-size: 350px;
-  width: 200px;
-  height: 200px;
-  margin: 32px auto;
-}
-.bengal {
-  background-image: url(../images/bengal.jpg);
-}
-.munchkin {
-  background-image: url(../images/munchkin.jpg);
-}
-.sphynx {
-  background-image: url(../images/sphynx.jpg);
-}
-
-/* About */
-.temukan-saya {
-  text-align: center;
-}
-.temukan-saya li a {
-  font-size: 1.5rem;
-  transition: 0.1s;
-}
-.temukan-saya li a:hover {
-  color: navy;
-  font-size: 2.2rem;
-}
-.kafin {
-  background-image: url(../images/avatar-kafin.jpg);
 }
