@@ -1,3 +1,4 @@
+var favoritedTeams; // global State
 // #0 execute this file
 console.log("#0 main.js executed");
 
@@ -76,6 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //#3 define render function
 function showLoader() {
   document.getElementById("main-content").innerHTML = "";
+  document.getElementById("header-title").innerHTML = "";
   const html = `<div style="padding: 30% 15%; height: 50%;">
                   <div class="preloader-wrapper big active">
                     <div class="spinner-layer spinner-layer ">
@@ -95,13 +97,6 @@ function showLoader() {
 function hideLoader() {
   document.getElementById("loader").innerHTML = "";
 }
-
-const loadFavoriteTeams = () => {
-  setTimeout(function() {
-    document.getElementById("header-title").innerHTML = "Your Favorited Team";
-    document.getElementById("main-content").innerHTML = "favorited team";
-  }, 750);
-};
 
 // #4 LETS GIVE THEM SOME DATA
 // data config
@@ -238,14 +233,13 @@ const loadTeams = () => {
 function showTeams(data) {
   let content = "";
   let renderTarget = document.getElementById("main-content");
-  console.log("data teams", data.teams);
   data.teams.forEach(function(team) {
     content += `
         <div class="col s12 m6">
             <div class="card">
                 <div class="card-image">
                     <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
-                    <a onclick="addToFavorite(${team.id},'${team.name}')" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
+                    <a onclick="promptAddTeamToFavorite(${team.id})" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
                 </div>
                 <div class="card-content">
                     <h6>${team.name}</h6>
@@ -266,3 +260,108 @@ function showTeams(data) {
 function addToFavorite(id, name) {
   M.toast({ html: `${name} added to your favorites !` });
 }
+
+var loadFavoriteTeams = () => {
+  showLoader();
+  var teams = getFavoriteTeams();
+
+  teams.then(data => {
+    favoritedTeams = data;
+    var html = "";
+    html += '<div class="row">';
+    data.forEach(team => {
+      html += `
+      <div class="col s12 m6 l6">
+        <div class="card">
+          <div class="card-content">
+            <div class="center"><img width="64" height="64" src="${team.crestUrl ||
+              "img/empty_badge.svg"}"></div>
+            <div class="center flow-text">${team.name}</div>
+            <div class="center">${team.area.name}</div>
+            <div class="center"><a href="${team.website}" target="_blank">${
+        team.website
+      }</a></div>
+          </div>
+          <div class="card-action right-align">
+              <a class="waves-effect waves-light btn-small red" onclick="deleteTeamListener(${
+                team.id
+              })"><i class="material-icons left">delete</i>Delete</a>
+          </div>
+        </div>
+      </div>
+    `;
+    });
+
+    if (data.length == 0)
+      html +=
+        '<h5 class="center-align">You have no favorite team! get one !</h5>';
+    html += "</div>";
+    document.getElementById("header-title").innerHTML = "Favorited Teams";
+    document.getElementById("main-content").innerHTML = html;
+    hideLoader();
+  });
+};
+
+// # indexedDB Operation
+if (indexedDB) console.log("#5 indexedDB loaded");
+var dbx = idb.open("football", 1, upgradeDb => {
+  switch (upgradeDb.oldVersion) {
+    case 0:
+      upgradeDb.createObjectStore("teams", { keyPath: "id" });
+  }
+});
+
+var getFavoriteTeams = () => {
+  return dbx.then(db => {
+    var tx = db.transaction("teams", "readonly");
+    var store = tx.objectStore("teams");
+    return store.getAll();
+  });
+};
+
+var insertTeam = team => {
+  dbx
+    .then(db => {
+      var tx = db.transaction("teams", "readwrite");
+      var store = tx.objectStore("teams");
+      team.createdAt = new Date().getTime();
+      store.put(team);
+      return tx.complete;
+    })
+    .then(() => {
+      M.toast({ html: `${team.name} telah ditambahkan ke Team Favorit !` });
+    })
+    .catch(err => {
+      console.error("Team gagal disimpan", err);
+    });
+};
+
+var deleteTeam = teamId => {
+  dbx
+    .then(db => {
+      var tx = db.transaction("teams", "readwrite");
+      var store = tx.objectStore("teams");
+      store.delete(teamId);
+      return tx.complete;
+    })
+    .then(() => {
+      M.toast({ html: "Your Favorited Team has been deleted!" });
+      loadFavoriteTeams();
+    })
+    .catch(err => {
+      console.error("Error: ", err);
+    });
+};
+
+var promptAddTeamToFavorite = teamId => {
+  var teamName = favoritedTeams.teams.filter(el => el.id == teamId)[0];
+  console.log(`promptAddTeamToFavorite ${teamName}`);
+  insertTeam(teamName);
+};
+
+var promptDeleteTeam = teamId => {
+  const prompt = confirm("Delete this team?");
+  if (prompt == true) {
+    deleteTeam(teamId);
+  }
+};
