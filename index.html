@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="theme-color" content="#00897B" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="css/materialize.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="icon" type="image/png" href="images/icon-128.png" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Rubik:300,500,700"
+      rel="stylesheet"
+    />
+    <title>Football PWA</title>
+  </head>
+  <body>
+    <nav class="light-blue lighten-1" role="navigation">
+      <div class="nav-wrapper container">
+        <a href="#home" class="brand-logo" id="logo-container">Football PWA</a>
+        <a href="#" class="sidenav-trigger" data-target="nav-mobile">☰</a>
+
+        <ul class="topnav right hide-on-med-and-down"></ul>
+        <ul class="sidenav" id="nav-mobile"></ul>
+      </div>
+    </nav>
+
+    <div class="container" id="body-content">
+      <h5 class="header" id="header-title"></h5>
+      <div class="row">
+        <div class="center-align" id="loader"></div>
+        <div class="col s12 m12" id="dynamic-content">
+          <div class="section no-pad-bot">
+            <div class="container">
+              <div class="row" id="main-content"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-copyright">
+      <span class="footer-text">
+        PWA football-data ❤️ by kafin salim
+      </span>
+    </div>
+    <script src="js/materialize.min.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
