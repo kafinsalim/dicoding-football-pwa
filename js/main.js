@@ -67,10 +67,59 @@ document.addEventListener("DOMContentLoaded", function() {
 
   loadPage(page);
   function loadPage(page) {
-    if (page == "home") console.log("go home"); //loadStandings();
-    if (page == "teams") console.log("go team"); //loadTeams();
-    if (page == "favorite-team") console.log("go favorite-team"); //loadFavoriteTeams();
+    if (page == "home") loadStandings();
+    if (page == "teams") loadTeams();
+    if (page == "favorite-teams") loadFavoriteTeams();
   }
 });
 
 //#3 define render function
+const showLoader = () => {
+  document.getElementById("main-content").innerHTML = "";
+  const html = `<div style="padding: 30% 15%; height: 50%;">
+                  <div class="preloader-wrapper big active">
+                    <div class="spinner-layer spinner-layer ">
+                      <div class="circle-clipper left">
+                        <div class="circle"></div>
+                      </div><div class="gap-patch">
+                        <div class="circle"></div>
+                      </div><div class="circle-clipper right">
+                        <div class="circle"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+  document.getElementById("loader").innerHTML = html;
+};
+
+const hideLoader = () => {
+  document.getElementById("loader").innerHTML = "";
+};
+
+const loadStandings = () => {
+  showLoader();
+  setTimeout(function() {
+    document.getElementById("header-title").innerHTML =
+      "English Premier Standings";
+    document.getElementById("main-content").innerHTML = "standings";
+    hideLoader();
+  }, 750);
+};
+
+const loadTeams = () => {
+  showLoader();
+  setTimeout(function() {
+    document.getElementById("header-title").innerHTML = "English Premier Teams";
+    document.getElementById("main-content").innerHTML = "teams";
+    hideLoader();
+  }, 750);
+};
+
+const loadFavoriteTeams = () => {
+  showLoader();
+  setTimeout(function() {
+    document.getElementById("header-title").innerHTML = "Your Favorited Team";
+    document.getElementById("main-content").innerHTML = "favorited team";
+    hideLoader();
+  }, 750);
+};
