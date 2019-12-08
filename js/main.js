@@ -96,23 +96,6 @@ function hideLoader() {
   document.getElementById("loader").innerHTML = "";
 }
 
-// const loadStandings = () => {
-//   showLoader();
-//   setTimeout(function() {
-//     document.getElementById("header-title").innerHTML =
-//       "English Premier Standings";
-//     document.getElementById("main-content").innerHTML = "standings";
-//     hideLoader();
-//   }, 750);
-// };
-
-const loadTeams = () => {
-  setTimeout(function() {
-    document.getElementById("header-title").innerHTML = "English Premier Teams";
-    document.getElementById("main-content").innerHTML = "teams";
-  }, 750);
-};
-
 const loadFavoriteTeams = () => {
   setTimeout(function() {
     document.getElementById("header-title").innerHTML = "Your Favorited Team";
@@ -162,8 +145,7 @@ const loadStandings = () => {
     caches.match(API.STANDINGS).then(function(response) {
       if (response) {
         response.json().then(function(data) {
-          console.log("Competition Data: " + data);
-          showStanding(data);
+          showStandings(data);
         });
       }
     });
@@ -171,19 +153,15 @@ const loadStandings = () => {
 
   fetchData(API.STANDINGS)
     .then(data => {
-      showStanding(data);
-      document.getElementById("header-title").innerHTML =
-        "English Premier Teams";
-      //   hideLoader();
+      showStandings(data);
     })
     .catch(error => {
       console.log(error);
-      //   hideLoader();
     });
 };
 
-// simple render html, KEEP IT SIMPLE STUPID.
-function showStanding(data) {
+// simple render Standings, KEEP IT SIMPLE STUPID.
+function showStandings(data) {
   let content = "";
   let renderTarget = document.getElementById("main-content");
 
@@ -230,5 +208,57 @@ function showStanding(data) {
                 
                 </div>
     `;
+  document.getElementById("header-title").innerHTML =
+    "English Premier Standings";
+  hideLoader();
+}
+
+const loadTeams = () => {
+  showLoader();
+  if ("caches" in window) {
+    caches.match(API.TEAMS).then(function(response) {
+      if (response) {
+        response.json().then(function(data) {
+          showTeams(data);
+        });
+      }
+    });
+  }
+
+  fetchData(API.TEAMS)
+    .then(data => {
+      showTeams(data);
+    })
+    .catch(error => {
+      console.log(error);
+    });
+};
+
+// simple render Standings, KEEP IT SIMPLE STUPID.
+function showTeams(data) {
+  let content = "";
+  let renderTarget = document.getElementById("main-content");
+  console.log("data teams", data.teams);
+  data.teams.forEach(function(team) {
+    content += `
+        <div class="col s12 m6">
+            <div class="card">
+                <div class="card-image">
+                    <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
+                    <a class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
+                </div>
+                <div class="card-content">
+                    <h6>${team.name}</h6>
+                    <p>Founded: ${team.founded}</p>
+                    <p>Venue: ${team.venue}</p>
+                    <a href="${team.website}">${team.website}</a>
+                </div>
+            </div>
+        </div>
+        `;
+  });
+
+  renderTarget.innerHTML = content;
+  document.getElementById("header-title").innerHTML = "English Premier Teams";
   hideLoader();
 }
