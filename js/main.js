@@ -1,4 +1,6 @@
-var favoritedTeams; // global State
+// should initiated first var put here
+var teamsData; // global State
+
 // #0 execute this file
 console.log("#0 main.js executed");
 
@@ -56,6 +58,11 @@ document.addEventListener("DOMContentLoaded", function() {
               loadPage(page);
             });
           });
+
+        // add event on click app name
+        logoContainer.addEventListener("click", function(event) {
+          loadPage("home");
+        });
       }
     };
     xhttp.open("GET", "nav.html", true);
@@ -221,6 +228,7 @@ const loadTeams = () => {
 
   fetchData(API.TEAMS)
     .then(data => {
+      teamsData = data; // write to global var (like state)
       showTeams(data);
     })
     .catch(error => {
@@ -238,7 +246,7 @@ function showTeams(data) {
             <div class="card">
                 <div class="card-image">
                     <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
-                    <a onclick="promptAddTeamToFavorite(${team.id})" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
+                    <a onclick="addFavoriteTeam(${team.id})" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
                 </div>
                 <div class="card-content">
                     <h6>${team.name}</h6>
@@ -256,51 +264,18 @@ function showTeams(data) {
   hideLoader();
 }
 
-function addToFavorite(id, name) {
-  M.toast({ html: `${name} added to your favorites !` });
-}
-
-var loadFavoriteTeams = () => {
+var loadFavoriteTeams = async () => {
   showLoader();
-  // var teams = getFavoriteTeams();
-
-  // teams.then(data => {
-  //   favoritedTeams = data;
-  var html = `
-      <button onclick="addTeam()">Add a Team</button>
-      <button onclick="clearTeams()">Clear Teams</button>
-      <ul id="listElem"></ul>
+  const html = `
+      <a class="waves-effect waves-light btn-small red" onclick="clearAllFavoriteTeam()">Kosongkan tim favorit</a>
+      <div class="row" style="margin-top: 16px;">
+        <div id="listFavoriteTeamElement"></div>
+      </div>
     `;
-  html += '<div class="row">';
-  // data.forEach(team => {
-  //   html += `
-  //   <div class="col s12 m6 l6">
-  //     <div class="card">
-  //       <div class="card-content">
-  //         <div class="center"><img width="64" height="64" src="${team.crestUrl ||
-  //           "img/empty_badge.svg"}"></div>
-  //         <div class="center flow-text">${team.name}</div>
-  //         <div class="center">${team.area.name}</div>
-  //         <div class="center"><a href="${team.website}" target="_blank">${
-  //     team.website
-  //   }</a></div>
-  //       </div>
-  //       <div class="card-action right-align">
-  //           <a class="waves-effect waves-light btn-small red" onclick="deleteTeamListener(${
-  //             team.id
-  //           })"><i class="material-icons left">delete</i>Delete</a>
-  //       </div>
-  //     </div>
-  //   </div>
-  // `;
-  // });
-
-  // if (data.length == 0)
-  html += "</div>";
   headerTitle.innerHTML = "Favorited Teams";
   mainContent.innerHTML = html;
+  await renderFavoriteList(); // render favorited teams
   hideLoader();
-  // });
 };
 
 // # indexedDB Operation
@@ -309,125 +284,74 @@ if (!("indexedDB" in window)) {
   console.log("This browser doesn't support IndexedDB");
 }
 
-let db;
-
-init();
+var db;
 
 async function init() {
   db = await idb.openDb("teamsDb", 1, db => {
     db.createObjectStore("teams", { keyPath: "name" });
   });
-
-  list();
 }
 
-async function list() {
-  let tx = db.transaction("teams");
+async function renderFavoriteList() {
+  await init();
+  let tx = db.transaction("teams", "readwrite");
   let teamStore = tx.objectStore("teams");
 
-  let teams = await teamStore.getAll();
+  let teams = (await teamStore.getAll()) || [];
 
   if (teams.length) {
-    listElem.innerHTML = teams
+    listFavoriteTeamElement.innerHTML = teams
       .map(
-        team => `<li>
-        name: ${team.name}, price: ${team.price}
-      </li>`
+        team => `
+          <div class="col s12 m6 l6">
+            <div class="card">
+              <div class="card-content">
+                <div class="center"><img width="64" height="64" src="${team.crestUrl}"></div>
+                <div class="center flow-text">${team.name}</div>
+                <div class="center">Founded: ${team.founded}</div>
+                <div class="center">Venue: ${team.venue}</div>
+                <div class="center"><a href="${team.website}" target="_blank">${team.website}</a></div>
+              </div>
+            </div>
+          </div>
+        `
       )
       .join("");
   } else {
-    listElem.innerHTML =
+    listFavoriteTeamElement.innerHTML =
       '<h5 class="center-align">You have no favorite team! get one !</h5>';
   }
+  hideLoader();
 }
 
-async function clearTeams() {
+async function clearAllFavoriteTeam() {
   let tx = db.transaction("teams", "readwrite");
   await tx.objectStore("teams").clear();
-  await list();
+  loadFavoriteTeams();
+  M.toast({ html: `Semua Team Favorit telah dihapus !` });
 }
 
-async function addTeam() {
-  let name = prompt("team name?");
-  let price = +prompt("team price?");
-
+async function addFavoriteTeam(teamId) {
+  var teamObject = teamsData.teams.filter(el => el.id == teamId)[0];
   let tx = db.transaction("teams", "readwrite");
-
   try {
-    await tx.objectStore("teams").add({ name, price });
-    await list();
+    await tx.objectStore("teams").add(teamObject);
+    M.toast({
+      html: `${teamObject.name} ditambahkan ke Team Favorit.`
+    });
   } catch (err) {
     if (err.name == "ConstraintError") {
-      alert("Such team exists already");
-      await addTeam();
+      M.toast({
+        html: `${teamObject.name} sudah pernah ditambahkan ke Team Favorit.`
+      });
     } else {
+      console.error("Team gagal disimpan", err);
       throw err;
     }
   }
 }
 
+// log and catch error
 window.addEventListener("unhandledrejection", event => {
-  alert("Error idb: " + event.reason.message);
+  console.warn("Error idb: " + JSON.stringify(event));
 });
-
-// var dbx = idb.open("football", 1, upgradeDb => {
-//   switch (upgradeDb.oldVersion) {
-//     case 0:
-//       upgradeDb.createObjectStore("teams", { keyPath: "id" });
-//   }
-// });
-
-// var getFavoriteTeams = () => {
-//   return dbx.then(db => {
-//     var tx = db.transaction("teams", "readonly");
-//     var store = tx.objectStore("teams");
-//     return store.getAll();
-//   });
-// };
-
-// var insertTeam = team => {
-//   dbx
-//     .then(db => {
-//       var tx = db.transaction("teams", "readwrite");
-//       var store = tx.objectStore("teams");
-//       team.createdAt = new Date().getTime();
-//       store.put(team);
-//       return tx.complete;
-//     })
-//     .then(() => {
-//       M.toast({ html: `${team.name} telah ditambahkan ke Team Favorit !` });
-//     })
-//     .catch(err => {
-//       console.error("Team gagal disimpan", err);
-//     });
-// };
-
-// var deleteTeam = teamId => {
-//   dbx
-//     .then(db => {
-//       var tx = db.transaction("teams", "readwrite");
-//       var store = tx.objectStore("teams");
-//       store.delete(teamId);
-//       return tx.complete;
-//     })
-//     .then(() => {
-//       M.toast({ html: "Your Favorited Team has been deleted!" });
-//       loadFavoriteTeams();
-//     })
-//     .catch(err => {
-//       console.error("Error: ", err);
-//     });
-// };
-
-// var promptAddTeamToFavorite = teamId => {
-//   var teamName = favoritedTeams.teams.filter(el => el.id == teamId)[0];
-//   console.log(`promptAddTeamToFavorite ${teamName}`);
-//   insertTeam(teamName);
-// };
-
-// var promptDeleteTeam = teamId => {
-//   const prompt = confirm("Delete this team?");
-//   if (prompt == true) {
-//     deleteTeam(teamId);
-//   }
-// };
