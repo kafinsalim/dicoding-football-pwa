@@ -76,8 +76,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //#3 define render function
 function showLoader() {
-  document.getElementById("main-content").innerHTML = "";
-  document.getElementById("header-title").innerHTML = "";
+  mainContent.innerHTML = "";
+  headerTitle.innerHTML = "";
   const html = `<div style="padding: 30% 15%; height: 50%;">
                   <div class="preloader-wrapper big active">
                     <div class="spinner-layer spinner-layer ">
@@ -158,7 +158,7 @@ const loadStandings = () => {
 // simple render Standings, KEEP IT SIMPLE STUPID.
 function showStandings(data) {
   let content = "";
-  let renderTarget = document.getElementById("main-content");
+  let renderTarget = mainContent;
 
   data.standings[0].table.forEach(function(standing) {
     content += `
@@ -203,8 +203,7 @@ function showStandings(data) {
                 
                 </div>
     `;
-  document.getElementById("header-title").innerHTML =
-    "English Premier Standings";
+  headerTitle.innerHTML = "English Premier Standings";
   hideLoader();
 }
 
@@ -232,7 +231,7 @@ const loadTeams = () => {
 // simple render Standings, KEEP IT SIMPLE STUPID.
 function showTeams(data) {
   let content = "";
-  let renderTarget = document.getElementById("main-content");
+  let renderTarget = mainContent;
   data.teams.forEach(function(team) {
     content += `
         <div class="col s12 m6">
@@ -253,7 +252,7 @@ function showTeams(data) {
   });
 
   renderTarget.innerHTML = content;
-  document.getElementById("header-title").innerHTML = "English Premier Teams";
+  headerTitle.innerHTML = "English Premier Teams";
   hideLoader();
 }
 
@@ -263,105 +262,172 @@ function addToFavorite(id, name) {
 
 var loadFavoriteTeams = () => {
   showLoader();
-  var teams = getFavoriteTeams();
+  // var teams = getFavoriteTeams();
 
-  teams.then(data => {
-    favoritedTeams = data;
-    var html = "";
-    html += '<div class="row">';
-    data.forEach(team => {
-      html += `
-      <div class="col s12 m6 l6">
-        <div class="card">
-          <div class="card-content">
-            <div class="center"><img width="64" height="64" src="${team.crestUrl ||
-              "img/empty_badge.svg"}"></div>
-            <div class="center flow-text">${team.name}</div>
-            <div class="center">${team.area.name}</div>
-            <div class="center"><a href="${team.website}" target="_blank">${
-        team.website
-      }</a></div>
-          </div>
-          <div class="card-action right-align">
-              <a class="waves-effect waves-light btn-small red" onclick="deleteTeamListener(${
-                team.id
-              })"><i class="material-icons left">delete</i>Delete</a>
-          </div>
-        </div>
-      </div>
+  // teams.then(data => {
+  //   favoritedTeams = data;
+  var html = `
+      <button onclick="addTeam()">Add a Team</button>
+      <button onclick="clearTeams()">Clear Teams</button>
+      <ul id="listElem"></ul>
     `;
-    });
+  html += '<div class="row">';
+  // data.forEach(team => {
+  //   html += `
+  //   <div class="col s12 m6 l6">
+  //     <div class="card">
+  //       <div class="card-content">
+  //         <div class="center"><img width="64" height="64" src="${team.crestUrl ||
+  //           "img/empty_badge.svg"}"></div>
+  //         <div class="center flow-text">${team.name}</div>
+  //         <div class="center">${team.area.name}</div>
+  //         <div class="center"><a href="${team.website}" target="_blank">${
+  //     team.website
+  //   }</a></div>
+  //       </div>
+  //       <div class="card-action right-align">
+  //           <a class="waves-effect waves-light btn-small red" onclick="deleteTeamListener(${
+  //             team.id
+  //           })"><i class="material-icons left">delete</i>Delete</a>
+  //       </div>
+  //     </div>
+  //   </div>
+  // `;
+  // });
 
-    if (data.length == 0)
-      html +=
-        '<h5 class="center-align">You have no favorite team! get one !</h5>';
-    html += "</div>";
-    document.getElementById("header-title").innerHTML = "Favorited Teams";
-    document.getElementById("main-content").innerHTML = html;
-    hideLoader();
-  });
+  // if (data.length == 0)
+  html += "</div>";
+  headerTitle.innerHTML = "Favorited Teams";
+  mainContent.innerHTML = html;
+  hideLoader();
+  // });
 };
 
 // # indexedDB Operation
 if (indexedDB) console.log("#5 indexedDB loaded");
-var dbx = idb.open("football", 1, upgradeDb => {
-  switch (upgradeDb.oldVersion) {
-    case 0:
-      upgradeDb.createObjectStore("teams", { keyPath: "id" });
+if (!("indexedDB" in window)) {
+  console.log("This browser doesn't support IndexedDB");
+}
+
+let db;
+
+init();
+
+async function init() {
+  db = await idb.openDb("teamsDb", 1, db => {
+    db.createObjectStore("teams", { keyPath: "name" });
+  });
+
+  list();
+}
+
+async function list() {
+  let tx = db.transaction("teams");
+  let teamStore = tx.objectStore("teams");
+
+  let teams = await teamStore.getAll();
+
+  if (teams.length) {
+    listElem.innerHTML = teams
+      .map(
+        team => `<li>
+        name: ${team.name}, price: ${team.price}
+      </li>`
+      )
+      .join("");
+  } else {
+    listElem.innerHTML =
+      '<h5 class="center-align">You have no favorite team! get one !</h5>';
   }
+}
+
+async function clearTeams() {
+  let tx = db.transaction("teams", "readwrite");
+  await tx.objectStore("teams").clear();
+  await list();
+}
+
+async function addTeam() {
+  let name = prompt("team name?");
+  let price = +prompt("team price?");
+
+  let tx = db.transaction("teams", "readwrite");
+
+  try {
+    await tx.objectStore("teams").add({ name, price });
+    await list();
+  } catch (err) {
+    if (err.name == "ConstraintError") {
+      alert("Such team exists already");
+      await addTeam();
+    } else {
+      throw err;
+    }
+  }
+}
+
+window.addEventListener("unhandledrejection", event => {
+  alert("Error idb: " + event.reason.message);
 });
 
-var getFavoriteTeams = () => {
-  return dbx.then(db => {
-    var tx = db.transaction("teams", "readonly");
-    var store = tx.objectStore("teams");
-    return store.getAll();
-  });
-};
+// var dbx = idb.open("football", 1, upgradeDb => {
+//   switch (upgradeDb.oldVersion) {
+//     case 0:
+//       upgradeDb.createObjectStore("teams", { keyPath: "id" });
+//   }
+// });
 
-var insertTeam = team => {
-  dbx
-    .then(db => {
-      var tx = db.transaction("teams", "readwrite");
-      var store = tx.objectStore("teams");
-      team.createdAt = new Date().getTime();
-      store.put(team);
-      return tx.complete;
-    })
-    .then(() => {
-      M.toast({ html: `${team.name} telah ditambahkan ke Team Favorit !` });
-    })
-    .catch(err => {
-      console.error("Team gagal disimpan", err);
-    });
-};
+// var getFavoriteTeams = () => {
+//   return dbx.then(db => {
+//     var tx = db.transaction("teams", "readonly");
+//     var store = tx.objectStore("teams");
+//     return store.getAll();
+//   });
+// };
 
-var deleteTeam = teamId => {
-  dbx
-    .then(db => {
-      var tx = db.transaction("teams", "readwrite");
-      var store = tx.objectStore("teams");
-      store.delete(teamId);
-      return tx.complete;
-    })
-    .then(() => {
-      M.toast({ html: "Your Favorited Team has been deleted!" });
-      loadFavoriteTeams();
-    })
-    .catch(err => {
-      console.error("Error: ", err);
-    });
-};
+// var insertTeam = team => {
+//   dbx
+//     .then(db => {
+//       var tx = db.transaction("teams", "readwrite");
+//       var store = tx.objectStore("teams");
+//       team.createdAt = new Date().getTime();
+//       store.put(team);
+//       return tx.complete;
+//     })
+//     .then(() => {
+//       M.toast({ html: `${team.name} telah ditambahkan ke Team Favorit !` });
+//     })
+//     .catch(err => {
+//       console.error("Team gagal disimpan", err);
+//     });
+// };
 
-var promptAddTeamToFavorite = teamId => {
-  var teamName = favoritedTeams.teams.filter(el => el.id == teamId)[0];
-  console.log(`promptAddTeamToFavorite ${teamName}`);
-  insertTeam(teamName);
-};
+// var deleteTeam = teamId => {
+//   dbx
+//     .then(db => {
+//       var tx = db.transaction("teams", "readwrite");
+//       var store = tx.objectStore("teams");
+//       store.delete(teamId);
+//       return tx.complete;
+//     })
+//     .then(() => {
+//       M.toast({ html: "Your Favorited Team has been deleted!" });
+//       loadFavoriteTeams();
+//     })
+//     .catch(err => {
+//       console.error("Error: ", err);
+//     });
+// };
 
-var promptDeleteTeam = teamId => {
-  const prompt = confirm("Delete this team?");
-  if (prompt == true) {
-    deleteTeam(teamId);
-  }
-};
+// var promptAddTeamToFavorite = teamId => {
+//   var teamName = favoritedTeams.teams.filter(el => el.id == teamId)[0];
+//   console.log(`promptAddTeamToFavorite ${teamName}`);
+//   insertTeam(teamName);
+// };
+
+// var promptDeleteTeam = teamId => {
+//   const prompt = confirm("Delete this team?");
+//   if (prompt == true) {
+//     deleteTeam(teamId);
+//   }
+// };
