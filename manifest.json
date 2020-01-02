@@ -5,8 +5,8 @@
   "description": "Aplikasi berisi informasi sepakbola bersumber dari API football-data.org",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#29b6f6",
-  "theme_color": "#29b6f6",
+  "background_color": "#29B6F6",
+  "theme_color": "#29B6F6",
   "icons": [
     {
       "src": "images/icon-192.png",

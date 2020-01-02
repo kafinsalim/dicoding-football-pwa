@@ -279,7 +279,7 @@ var loadFavoriteTeams = async () => {
 };
 
 // # indexedDB Operation
-if (indexedDB) console.log("#5 indexedDB loaded");
+if (indexedDB) console.log("#5 indexedDB available");
 if (!("indexedDB" in window)) {
   console.log("This browser doesn't support IndexedDB");
 }
@@ -287,10 +287,18 @@ if (!("indexedDB" in window)) {
 var db;
 
 async function init() {
-  db = await idb.openDb("teamsDb", 1, db => {
-    db.createObjectStore("teams", { keyPath: "name" });
-  });
+  console.log("idb initiated");
+  try {
+    db = await idb.openDb("teamsDb", 1, db => {
+      db.createObjectStore("teams", { keyPath: "id" });
+    });
+    console.log("#5 idb initiated");
+  } catch (e) {
+    console.log("#5 idb init failed", e);
+  }
 }
+
+init();
 
 async function renderFavoriteList() {
   await init();
