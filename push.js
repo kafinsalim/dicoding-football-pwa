@@ -1,6 +1,7 @@
-// run :
-// npm instal web-push -g
-// node push.js
+// run the application ( i use http-server . )
+// copy all generated pushSubscription key (endpoint, key pd256dh, auth) to this file
+// run command npm instal web-push -g
+// run command node push.js (in this directory)
 // tested and works !!
 
 var webPush = require("web-push");
@@ -18,11 +19,11 @@ webPush.setVapidDetails(
 );
 var pushSubscription = {
   endpoint:
-    "https://fcm.googleapis.com/fcm/send/cParxz2-mW0:APA91bG4h-Jjm00fEwPCT9JbAb7trm9WpVkRQkpL4dX8tNY7eZoLWAS2J-OG60Z5C1aKAUYQbZoc35PjzSoKSofkacQQRpZ4Nbu2TRF83Yb7EwGUk5l4qQX8OYrxwrLDNDYJd0zIglUz",
+    "https://fcm.googleapis.com/fcm/send/dkG9dYOWgwQ:APA91bFgLSHU4cvaJ8IvUfMaWCuDjljyXvPHU3LpL2J2qCKCWY7gKAoWM4Fh3CXJ9By9cdd_Cz8XuZaBiVaceJqXnXoPvYtFCG3qmnOe4rO9XBazvhV-3flLrpiw4nHUqYLDe01JcML_",
   keys: {
     p256dh:
-      "BFKghTAZTVJF1+tWMutPCFE24jtjv9nNWJiJqeFpDQM7etKEQQq8QDokyhsphJmZxFFxDUOXRBWgRfoTffplf/o=",
-    auth: "cDwydqmRN3A2veFzU5KGmg=="
+      "BBlaG4SPw/jxocgT+hl5Kro6hH9LJ/XFcmZ+xJjCcH7QIhxTQiOYqxO0dyd8aF0jtiFifRlypYndmWheQGGxjU0=",
+    auth: "UcNz57MMbnV+Y7w25u8oNg=="
   }
 };
 var payload = "Halo, Ini push notifikasi submission 2 Dicoding MPWA!";

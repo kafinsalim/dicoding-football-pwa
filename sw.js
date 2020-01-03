@@ -1,105 +1,145 @@
+console.log("Hello from service-worker.js");
+// # installing workbox
+importScripts(
+  "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js"
+);
+
+if (self.workbox) {
+  console.log("Yay! Workbox is loaded 🎉");
+} else {
+  console.log("Boo! Workbox didn't load 😬");
+}
+
 const CACHE_NAME = "football-data-pwa";
 var urlsToCache = [
-  "/",
-  "/index.html",
-  "/nav.html",
-  "/images/icon-512.png",
-  "/images/icon-192.png",
-  "/images/icon-128.png",
-  "/css/materialize.min.css",
-  "/css/style.css",
-  "/js/materialize.min.js",
-  "/js/main.js",
-  "/js/idb.js",
-  "/manifest.json"
+  { url: "/", revision: "2" },
+  { url: "/index.html", revision: "2" },
+  { url: "/nav.html", revision: "2" },
+  { url: "/images/icon-512.png", revision: "2" },
+  { url: "/images/icon-192.png", revision: "2" },
+  { url: "/images/icon-128.png", revision: "2" },
+  { url: "/css/materialize.min.css", revision: "2" },
+  { url: "/css/style.css", revision: "2" },
+  { url: "/js/materialize.min.js", revision: "2" },
+  { url: "/js/main.js", revision: "2" },
+  { url: "/js/idb.js", revision: "2" }
 ];
 
-self.addEventListener("install", function(event) {
-  console.log("ServiceWorker: Menginstall..");
+workbox.precaching.precacheAndRoute(urlsToCache);
 
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      console.log("ServiceWorker: Membuka cache..");
-      return cache.addAll(urlsToCache);
-    })
-  );
-});
+// cache binary
+workbox.routing.registerRoute(
+  /\.(?:png|gif|jpg|jpeg|svg)$/,
+  workbox.strategies.cacheFirst({
+    cacheName: "images"
+  })
+);
 
-self.addEventListener("fetch", function(event) {
-  // event.respondWith(
-  //   caches.match(event.request).then(function(response) {
-  //     console.log("ServiceWorker: Menarik data: ", event.request.url);
+workbox.routing.registerRoute(
+  new RegExp("/css/"),
+  workbox.strategies.cacheFirst({
+    cacheName: "styles"
+  })
+);
 
-  //     if (response) {
-  //       console.log("ServiceWorker: Gunakan aset dari cache: ", response.url);
-  //       return response;
-  //     }
+workbox.routing.registerRoute(
+  new RegExp("/images/"),
+  workbox.strategies.cacheFirst({
+    cacheName: "images"
+  })
+);
 
-  //     console.log(
-  //       "ServiceWorker: Memuat aset dari server: ",
-  //       event.request.url
-  //     );
-  //     return fetch(event.request);
-  //   })
-  // );
+// fetch link
+workbox.routing.registerRoute(
+  new RegExp("/#home"),
+  workbox.strategies.staleWhileRevalidate({
+    cacheName: "pages"
+  })
+);
+workbox.routing.registerRoute(
+  new RegExp("/#teams"),
+  workbox.strategies.staleWhileRevalidate({
+    cacheName: "pages"
+  })
+);
+workbox.routing.registerRoute(
+  new RegExp("/#favorite-teams"),
+  workbox.strategies.staleWhileRevalidate({
+    cacheName: "pages"
+  })
+);
 
-  // cache 1st strategy
-  event.respondWith(
-    caches
-      .match(event.request, { cacheName: CACHE_NAME })
-      .then(function(response) {
-        if (response) {
-          return response;
-        }
-        var fetchRequest = event.request.clone();
-        return fetch(fetchRequest).then(function(response) {
-          if (!response || response.status !== 200) {
-            return response;
-          }
-          var responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        });
+// cache footbal api
+workbox.routing.registerRoute(
+  new RegExp("https://api.football-data.org/v2/competitions/2021/teams"),
+  new workbox.strategies.StaleWhileRevalidate({
+    cacheName: "api-cache",
+    plugins: [
+      workbox.cacheableResponse.Plugin({
+        statuses: [200, 404]
       })
-  );
+    ]
+  })
+);
 
-  // stale while validate strategy
-  // event.respondWith(
-  //   caches.open(CACHE_NAME).then(function(cache) {
-  //     return cache.match(event.request).then(function(response) {
-  //       var fetchPromise = fetch(event.request).then(function(networkResponse) {
-  //         cache.put(event.request, networkResponse.clone());
-  //         return networkResponse;
-  //       });
-  //       return response || fetchPromise;
-  //     });
-  //   })
-  // );
+workbox.routing.registerRoute(
+  new RegExp("https://api.football-data.org/v2/competitions/2021/standings"),
+  new workbox.strategies.StaleWhileRevalidate({
+    cacheName: "api-cache",
+    plugins: [
+      new workbox.cacheableResponse.Plugin({
+        statuses: [200, 404]
+      })
+    ]
+  })
+);
 
-  self.addEventListener("notificationclick", function(event) {
-    if (!event.action) {
-      // Penguna menyentuh area notifikasi diluar action
-      console.log("Notification Click.");
-      return;
-    }
-    switch (event.action) {
-      case "yes-action":
-        console.log("Pengguna memilih action yes.");
-        // buka tab baru
-        // eslint-disable-next-line no-undef
-        clients.openWindow("https://google.com");
-        break;
-      case "no-action":
-        console.log("Pengguna memilih action no");
-        break;
-      default:
-        console.log(`Action yang dipilih tidak dikenal: '${event.action}'`);
-        break;
-    }
-    // event.notification.close();
-  });
+// Menyimpan cache dari CSS Google Fonts
+workbox.routing.registerRoute(
+  /^https:\/\/fonts\.googleapis\.com/,
+  workbox.strategies.staleWhileRevalidate({
+    cacheName: "google-fonts-stylesheets"
+  })
+);
+
+// Menyimpan cache untuk file font selama 1 tahun
+workbox.routing.registerRoute(
+  /^https:\/\/fonts\.gstatic\.com/,
+  new workbox.strategies.cacheFirst({
+    cacheName: "google-fonts-webfonts",
+    plugins: [
+      new workbox.cacheableResponse.Plugin({
+        statuses: [0, 200]
+      }),
+      new workbox.expiration.Plugin({
+        maxAgeSeconds: 60 * 60 * 24 * 365,
+        maxEntries: 30
+      })
+    ]
+  })
+);
+
+self.addEventListener("notificationclick", function(event) {
+  if (!event.action) {
+    // Penguna menyentuh area notifikasi diluar action
+    console.log("Notification Click.");
+    return;
+  }
+  switch (event.action) {
+    case "yes-action":
+      console.log("Pengguna memilih action yes.");
+      // buka tab baru
+      // eslint-disable-next-line no-undef
+      clients.openWindow("https://google.com");
+      break;
+    case "no-action":
+      console.log("Pengguna memilih action no");
+      break;
+    default:
+      console.log(`Action yang dipilih tidak dikenal: '${event.action}'`);
+      break;
+  }
+  // event.notification.close();
 });
 
 self.addEventListener("push", function(event) {

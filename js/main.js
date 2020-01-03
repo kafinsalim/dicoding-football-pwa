@@ -5,24 +5,19 @@ var teamsData; // global State
 console.log("#0 main.js executed");
 
 // #1 register sw
-console.log("#1 sw.js executed");
+console.log("#1 checking service worker & workbox");
 // Periksa service worker
-if (!("serviceWorker" in navigator)) {
-  console.log("Service worker tidak didukung browser ini.");
-} else {
-  registerServiceWorker();
-}
-// Register service worker
-function registerServiceWorker() {
-  return navigator.serviceWorker
-    .register("../sw.js")
-    .then(function(registration) {
-      console.warn("Registrasi service worker berhasil.", registration);
-      return registration;
-    })
-    .catch(function(err) {
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    try {
+      navigator.serviceWorker.register("../sw.js");
+      console.warn("Registrasi service worker berhasil.");
+    } catch (err) {
       console.error("Registrasi service worker gagal.", err);
-    });
+    }
+  });
+} else {
+  console.error("Service worker tidak didukung browser ini.");
 }
 
 // #2 Load Navigator
@@ -122,7 +117,7 @@ const API = {
   }
 };
 
-console.log("#4 load config", CONFIG, API);
+console.log("#4 init config");
 
 // pseudo backend
 const fetchData = url => {
@@ -292,9 +287,9 @@ async function init() {
     db = await idb.openDb("teamsDb", 1, db => {
       db.createObjectStore("teams", { keyPath: "id" });
     });
-    console.log("#5 idb initiated");
+    console.log("#5 idb executed");
   } catch (e) {
-    console.log("#5 idb init failed", e);
+    console.log("#5 idb execution failed", e);
   }
 }
 
@@ -340,9 +335,9 @@ async function clearAllFavoriteTeam() {
 }
 
 async function addFavoriteTeam(teamId) {
-  var teamObject = teamsData.teams.filter(el => el.id == teamId)[0];
-  let tx = db.transaction("teams", "readwrite");
   try {
+    var teamObject = teamsData.teams.filter(el => el.id == teamId)[0];
+    let tx = db.transaction("teams", "readwrite");
     await tx.objectStore("teams").add(teamObject);
     M.toast({
       html: `${teamObject.name} ditambahkan ke Team Favorit.`
@@ -354,6 +349,9 @@ async function addFavoriteTeam(teamId) {
       });
     } else {
       console.error("Team gagal disimpan", err);
+      M.toast({
+        html: `Tim gagal disimpan, silahkan cek jaringan anda.`
+      });
       throw err;
     }
   }
@@ -373,74 +371,57 @@ var webPushConfig = {
 
 // Periksa fitur Notification API
 if ("Notification" in window) {
-  requestPermission();
-  if ("PushManager" in window) {
-    navigator.serviceWorker.getRegistration().then(function(registration) {
-      registration.pushManager
-        .subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(webPushConfig.publicKey)
-        })
-        .then(function(subscribe) {
-          console.log(
-            "Berhasil melakukan subscribe dengan endpoint: ",
-            subscribe.endpoint
-          );
-          console.log(
-            "Berhasil melakukan subscribe dengan p256dh key: ",
-            btoa(
-              String.fromCharCode.apply(
-                null,
-                new Uint8Array(subscribe.getKey("p256dh"))
-              )
-            )
-          );
-          console.log(
-            "Berhasil melakukan subscribe dengan auth key: ",
-            btoa(
-              String.fromCharCode.apply(
-                null,
-                new Uint8Array(subscribe.getKey("auth"))
-              )
-            )
-          );
-        })
-        .catch(function(e) {
-          console.log("Tidak dapat melakukan subscribe ", e.message);
-        });
-    });
-  }
+  // Meminta ijin menggunakan Notification API
+  Notification.requestPermission().then(result => {
+    if (result === "denied") {
+      console.log("Fitur notifikasi tidak diizinkan.");
+    } else if (result === "default") {
+      console.log("Pengguna menutup kotak dialog permintaan ijin.");
+    } else {
+      console.log("Fitur notifikasi diizinkan.");
+    }
+  });
 } else {
   console.log("Browser tidak mendukung notifikasi.");
 }
 
-// Meminta ijin menggunakan Notification API
-function requestPermission() {
-  Notification.requestPermission().then(function(result) {
-    if (result === "denied") {
-      console.log("Fitur notifikasi tidak diijinkan.");
-      return;
-    } else if (result === "default") {
-      console.log("Pengguna menutup kotak dialog permintaan ijin.");
-      return;
-    }
-
-    console.log("Fitur notifikasi diijinkan.");
+if ("PushManager" in window) {
+  navigator.serviceWorker.getRegistration().then(function(registration) {
+    registration.pushManager
+      .subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(webPushConfig.publicKey)
+      })
+      .then(function(subscribe) {
+        console.log(
+          "Berhasil melakukan subscribe dengan endpoint: ",
+          subscribe.endpoint
+        );
+        console.log(
+          "Berhasil melakukan subscribe dengan p256dh key: ",
+          btoa(
+            String.fromCharCode.apply(
+              null,
+              new Uint8Array(subscribe.getKey("p256dh"))
+            )
+          )
+        );
+        console.log(
+          "Berhasil melakukan subscribe dengan auth key: ",
+          btoa(
+            String.fromCharCode.apply(
+              null,
+              new Uint8Array(subscribe.getKey("auth"))
+            )
+          )
+        );
+      })
+      .catch(function(e) {
+        console.log("Tidak dapat melakukan subscribe ", e.message);
+      });
   });
-}
-
-function showNotifikasiSederhana() {
-  const title = "Notifikasi Sederhana";
-  const options = {
-    body: "Ini adalah konten notifikasi. \nBisa menggunakan baris baru."
-  };
-  if (Notification.permission === "granted") {
-    navigator.serviceWorker.ready.then(function(registration) {
-      registration.showNotification(title, options);
-    });
-  } else {
-    console.log("FItur notifikasi tidak diijinkan.");
-  }
+} else {
+  console.log("PushManager tidak tersedia.");
 }
 
 function urlBase64ToUint8Array(base64String) {
