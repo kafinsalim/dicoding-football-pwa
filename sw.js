@@ -1,8 +1,12 @@
 console.log("Hello from service-worker.js");
 // # installing workbox
-importScripts(
-  "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js"
-);
+try {
+  importScripts(
+    "https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js"
+  );
+} catch (e) {
+  console.log("importScripts error", e);
+}
 
 if (self.workbox) {
   console.log("Yay! Workbox is loaded 🎉");
@@ -75,7 +79,7 @@ workbox.routing.registerRoute(
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: "api-cache",
     plugins: [
-      workbox.cacheableResponse.Plugin({
+      new workbox.cacheableResponse.Plugin({
         statuses: [200, 404]
       })
     ]
@@ -105,7 +109,7 @@ workbox.routing.registerRoute(
 // Menyimpan cache untuk file font selama 1 tahun
 workbox.routing.registerRoute(
   /^https:\/\/fonts\.gstatic\.com/,
-  new workbox.strategies.cacheFirst({
+  workbox.strategies.cacheFirst({
     cacheName: "google-fonts-webfonts",
     plugins: [
       new workbox.cacheableResponse.Plugin({
