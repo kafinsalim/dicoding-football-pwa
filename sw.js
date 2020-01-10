@@ -75,19 +75,7 @@ workbox.routing.registerRoute(
 
 // cache footbal api
 workbox.routing.registerRoute(
-  new RegExp("https://api.football-data.org/v2/competitions/2021/teams"),
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: "api-cache",
-    plugins: [
-      new workbox.cacheableResponse.Plugin({
-        statuses: [200, 404]
-      })
-    ]
-  })
-);
-
-workbox.routing.registerRoute(
-  new RegExp("https://api.football-data.org/v2/competitions/2021/standings"),
+  new RegExp("https://api.football-data.org/v2/"),
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: "api-cache",
     plugins: [

@@ -213,8 +213,46 @@ const loadTeams = () => {
     });
 };
 
+// # indexedDB Operation
+if (!("indexedDB" in window)) {
+  console.log("This browser doesn't support IndexedDB");
+}
+
+var db;
+
+async function init() {
+  console.log("idb initiated");
+  try {
+    db = await idb.openDb("teamsDb", 1, db => {
+      db.createObjectStore("teams", { keyPath: "id" });
+    });
+    console.log("#5 idb executed");
+  } catch (e) {
+    console.log("#5 idb execution failed", e);
+  }
+}
+
+init();
+var db;
 // simple render Standings, KEEP IT SIMPLE STUPID.
-function showTeams(data) {
+async function showTeams(data) {
+  const tx = db.transaction("teams", "readwrite").objectStore("teams");
+  const txFavTeams = (await tx.getAll()) || [];
+  const favTeams = txFavTeams.map(i => i.id);
+  function renderButton(teamId) {
+    if (!favTeams.includes(teamId)) {
+      return `
+        <a
+          id="button-${teamId}"
+          onclick="addFavoriteTeam(${teamId})"
+          class="btn-floating btn-medium halfway-fab waves-effect waves-light blue"
+        >
+          <i id="icon-${teamId}" class="large material-icons">favorite</i>
+        </a>`;
+    } else {
+      return "";
+    }
+  }
   let content = "";
   let renderTarget = mainContent;
   data.teams.forEach(function(team) {
@@ -222,8 +260,10 @@ function showTeams(data) {
         <div class="col s12 m6">
             <div class="card">
                 <div class="card-image">
-                    <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
-                    <a onclick="addFavoriteTeam(${team.id})" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">add</i></a>
+                    <img src="${
+                      team.crestUrl
+                    }" style="padding: 16px; margin: auto; height: 135px; width: 135px">
+                    ${renderButton(team.id)}
                 </div>
                 <div class="card-content">
                     <h6>${team.name}</h6>
@@ -255,42 +295,22 @@ var loadFavoriteTeams = async () => {
   hideLoader();
 };
 
-// # indexedDB Operation
-if (!("indexedDB" in window)) {
-  console.log("This browser doesn't support IndexedDB");
-}
-
-var db;
-
-async function init() {
-  console.log("idb initiated");
-  try {
-    db = await idb.openDb("teamsDb", 1, db => {
-      db.createObjectStore("teams", { keyPath: "id" });
-    });
-    console.log("#5 idb executed");
-  } catch (e) {
-    console.log("#5 idb execution failed", e);
-  }
-}
-
-init();
-
 async function renderFavoriteList() {
   await init();
-  let tx = db.transaction("teams", "readwrite");
-  let teamStore = tx.objectStore("teams");
-
-  let teams = (await teamStore.getAll()) || [];
+  let tx = db.transaction("teams", "readwrite").objectStore("teams");
+  let teams = (await tx.getAll()) || [];
 
   if (teams.length) {
     listFavoriteTeamElement.innerHTML = teams
       .map(
         team => `
           <div class="col s12 m6 l6">
-            <div class="card">
+            <div class="card" id="card-${team.id}">
+              <div class="card-image">
+                <img src="${team.crestUrl}" style="padding: 16px; margin: auto; height: 135px; width: 135px">
+                <a onclick="removeFavoriteTeam(${team.id})" class="btn-floating btn-medium halfway-fab waves-effect waves-light red"><i class="large material-icons">delete</i></a>
+              </div>
               <div class="card-content">
-                <div class="center"><img width="64" height="64" src="${team.crestUrl}"></div>
                 <div class="center flow-text">${team.name}</div>
                 <div class="center">Founded: ${team.founded}</div>
                 <div class="center">Venue: ${team.venue}</div>
@@ -319,7 +339,11 @@ async function addFavoriteTeam(teamId) {
   try {
     var teamObject = teamsData.teams.filter(el => el.id == teamId)[0];
     let tx = db.transaction("teams", "readwrite");
-    await tx.objectStore("teams").add(teamObject);
+    if (await tx.objectStore("teams").add(teamObject)) {
+      // remove the button
+      var element = document.getElementById(`button-${teamId}`);
+      element.parentNode.removeChild(element);
+    }
     M.toast({
       html: `${teamObject.name} ditambahkan ke Team Favorit.`
     });
@@ -335,6 +359,25 @@ async function addFavoriteTeam(teamId) {
       });
       throw err;
     }
+  }
+}
+
+async function removeFavoriteTeam(teamId) {
+  try {
+    let tx = db.transaction("teams", "readwrite");
+    await tx.objectStore("teams").delete(teamId);
+    var element = document.getElementById(`card-${teamId}`);
+    element.parentNode.removeChild(element);
+    M.toast({
+      // html: `${teamObject.name} ditambahkan ke Team Favorit.`
+      html: `Team dihapus dari Favorit.`
+    });
+  } catch (err) {
+    console.error("Team gagal dihapus", err);
+    M.toast({
+      html: `Tim gagal dihapus, silahkan cek jaringan anda.`
+    });
+    throw err;
   }
 }
 
