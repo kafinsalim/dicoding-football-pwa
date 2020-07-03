@@ -1,6 +1,6 @@
-// run the application ( i use http-server . )
+// run the application ( run `npx http-server .` to run locally)
 // copy all generated pushSubscription key (endpoint, key pd256dh, auth) to this file
-// run command npm instal web-push -g
+// run command npm install web-push -g
 // run command node push.js (in this directory)
 // tested and works !!
 
